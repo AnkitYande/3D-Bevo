@@ -4,10 +4,15 @@
   },
   "name": "3d-bevo",
   "version": "1.0.0",
+  "repository": {
+    "url": "git+https://github.com/AnkitYande/3D-Bevo.git"
+  },
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack --mode=development --watch"
+    "dev": "webpack --mode=development --watch",
+    "build": "webpack --mode=development",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +21,7 @@
   "devDependencies": {
     "@types/dat.gui": "^0.7.7",
     "dat.gui": "^0.7.9",
+    "gh-pages": "^5.0.0",
     "webpack": "^5.76.1",
     "webpack-cli": "^5.0.1"
   }
