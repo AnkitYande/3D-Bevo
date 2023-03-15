@@ -1,4 +1,5 @@
 {
+  "homepage": "http://AnkitYande.github.io/3D-Bevo",
   "dependencies": {
     "three": "^0.150.1"
   },
