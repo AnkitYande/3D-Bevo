@@ -1,12 +1,12 @@
 {
-  "homepage": "http://AnkitYande.github.io/3D-Bevo",
+  "homepage": "http://AnkitYande.github.io/3DBevo",
   "dependencies": {
     "three": "^0.150.1"
   },
   "name": "3d-bevo",
   "version": "1.0.0",
   "repository": {
-    "url": "git+https://github.com/AnkitYande/3D-Bevo.git"
+    "url": "git+https://github.com/AnkitYande/3DBevo.git"
   },
   "main": "index.js",
   "scripts": {
