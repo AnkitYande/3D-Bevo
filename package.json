@@ -1,0 +1,29 @@
+{
+  "homepage": "./3DBevo/",
+  "dependencies": {
+    "three": "^0.150.1"
+  },
+  "name": "3d-bevo",
+  "version": "1.0.0",
+  "repository": {
+    "url": "git+https://github.com/AnkitYande/3DBevo.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack --mode=development --watch",
+    "build": "webpack --mode=development",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/dat.gui": "^0.7.7",
+    "dat.gui": "^0.7.9",
+    "gh-pages": "^5.0.0",
+    "webpack": "^5.76.1",
+    "webpack-cli": "^5.0.1"
+  }
+}
