@@ -4,7 +4,6 @@ module.exports = {
     entry: './src/index.js',
     output: {
         filename: 'main.js',
-        path: path.resolve('dist'),
-        publicPath: '/3DBevo/'
+        path: path.resolve(''),
     },
 }
