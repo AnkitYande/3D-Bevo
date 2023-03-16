@@ -9,11 +9,16 @@ const scene = new THREE.Scene()
 scene.background = new THREE.Color('skyblue')
 // scene.add(new THREE.AxesHelper(5))
 
-const hemiLight = new THREE.HemisphereLight(0xeeeeee, 0x222222, 0.75);
+const hemiLight = new THREE.HemisphereLight(0x888888, 0x444444, 0.6);
 scene.add(hemiLight);
 
-const lightA = new THREE.AmbientLight(0xffffff, 0.75); // soft white light
-scene.add(lightA);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(40, 40, 60);
+scene.add(dirLight);
+
+const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight2.position.set(-40, -60, - 30);
+scene.add(dirLight2);
 
 
 const camera = new THREE.PerspectiveCamera(
@@ -25,6 +30,7 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(4, 4, 8)
 
 const renderer = new THREE.WebGLRenderer({ antialias: false })
+renderer.outputEncoding = THREE.sRGBEncoding
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio * 2); //fixes anti aliesing
 document.body.appendChild(renderer.domElement)
