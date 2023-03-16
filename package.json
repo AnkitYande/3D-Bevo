@@ -1,5 +1,5 @@
 {
-  "homepage": ".",
+  "homepage": "./3DBevo/",
   "dependencies": {
     "three": "^0.150.1"
   },
