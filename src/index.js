@@ -44,7 +44,7 @@ function LoadAnimatedModel() {
     // const loader = new FBXLoader();
     const gltfLoader = new GLTFLoader()
 
-    gltfLoader.load('./3DBevo/3D/beebo.gltf', (gltf) => {
+    gltfLoader.load('./3D/beebo.gltf', (gltf) => {
         mixer = new THREE.AnimationMixer(gltf.scene)
         mixers.push(mixer)
         console.log("animations:", gltf.animations)
