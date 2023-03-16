@@ -3,7 +3,7 @@ const path = require('path')
 module.exports = {
     entry: './src/index.js',
     output: {
-        filename: 'bundle.js',
+        filename: 'main.js',
         path: path.resolve('dist'),
         publicPath: '/3DBevo/'
     },

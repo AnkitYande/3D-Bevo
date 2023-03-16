@@ -44,7 +44,7 @@ function LoadAnimatedModel() {
     // const loader = new FBXLoader();
     const gltfLoader = new GLTFLoader()
 
-    gltfLoader.load('../3D/beebo.gltf', (gltf) => {
+    gltfLoader.load('./3D/beebo.gltf', (gltf) => {
         mixer = new THREE.AnimationMixer(gltf.scene)
         mixers.push(mixer)
         console.log("animations:", gltf.animations)
@@ -85,7 +85,7 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
-    render()
+    renderer.render(scene, camera);
 }
 
 const stats = Stats()
