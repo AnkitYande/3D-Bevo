@@ -9,10 +9,10 @@ const scene = new THREE.Scene()
 scene.background = new THREE.Color('skyblue')
 // scene.add(new THREE.AxesHelper(5))
 
-const hemiLight = new THREE.HemisphereLight(0xeeeeee, 0x222222, 0.5);
+const hemiLight = new THREE.HemisphereLight(0xeeeeee, 0x222222, 0.75);
 scene.add(hemiLight);
 
-const lightA = new THREE.AmbientLight(0xffffff, 1); // soft white light
+const lightA = new THREE.AmbientLight(0xffffff, 0.75); // soft white light
 scene.add(lightA);
 
 

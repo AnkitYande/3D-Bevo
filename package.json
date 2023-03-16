@@ -1,5 +1,5 @@
 {
-  "homepage": "http://AnkitYande.github.io/3DBevo",
+  "homepage": ".",
   "dependencies": {
     "three": "^0.150.1"
   },
@@ -13,7 +13,7 @@
     "dev": "webpack --mode=development --watch",
     "build": "webpack --mode=development",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d ./dist"
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [],
   "author": "",
