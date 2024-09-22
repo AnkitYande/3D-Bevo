@@ -1,13 +1,12 @@
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import Stats from 'three/examples/jsm/libs/stats.module'
-import { GUI } from 'dat.gui'
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import Stats from 'three/examples/jsm/libs/stats.module';
+import { GUI } from 'dat.gui';
 
-const scene = new THREE.Scene()
-scene.background = new THREE.Color('skyblue')
-// scene.add(new THREE.AxesHelper(5))
+// Scene, Camera, and Renderer Setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('skyblue');
 
 const hemiLight = new THREE.HemisphereLight(0x888888, 0x444444, 0.6);
 scene.add(hemiLight);
@@ -16,126 +15,233 @@ const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
 dirLight.position.set(40, 40, 60);
 scene.add(dirLight);
 
-const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
-dirLight2.position.set(-40, -60, - 30);
-scene.add(dirLight2);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+camera.position.set(0, 4, 12);
 
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio * 2);
+document.body.appendChild(renderer.domElement);
 
-const camera = new THREE.PerspectiveCamera(
-    50,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    2000
-)
-camera.position.set(4, 4, 8)
+// OrbitControls for mouse control
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false; // Disable panning so camera only orbits
 
-const renderer = new THREE.WebGLRenderer({ antialias: false })
-renderer.outputEncoding = THREE.sRGBEncoding
-renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.setPixelRatio(window.devicePixelRatio * 2); //fixes anti aliesing
-document.body.appendChild(renderer.domElement)
+// Ground (Grass Texture)
+const textureLoader = new THREE.TextureLoader();
+const grassTexture = textureLoader.load('./grass.png');
+grassTexture.wrapS = THREE.RepeatWrapping;
+grassTexture.wrapT = THREE.RepeatWrapping;
+grassTexture.repeat.set(50, 50);
 
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true
-controls.target.set(0, 1, 0)
+const groundMaterial = new THREE.MeshPhongMaterial({ map: grassTexture });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), groundMaterial);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -1;
+scene.add(ground);
 
-let mixers = []
-let mixer;
-let animationActions = []
-let activeAction
-let lastAction
+// Animation Mixers and Actions
+let mixer, activeAction, lastAction;
+let animations = {}; // To store animation actions
 
+let movement = { forward: false, backward: false, left: false, right: false };
+let isJumping = false;
+let cameraOffset = new THREE.Vector3(0, 4, 10);  // Initial offset from the character
+let targetCameraPosition = camera.position.clone();  // Camera position to move towards
+
+// Load Model
 function LoadAnimatedModel() {
-
-    // const loader = new FBXLoader();
-    const gltfLoader = new GLTFLoader()
-
+    const gltfLoader = new GLTFLoader();
     gltfLoader.load('./3D/beebo.gltf', (gltf) => {
-        mixer = new THREE.AnimationMixer(gltf.scene)
-        mixers.push(mixer)
-        console.log("animations:", gltf.animations)
+        mixer = new THREE.AnimationMixer(gltf.scene);
 
-        const idle = mixer.clipAction((gltf).animations[0])
-        animationActions.push(idle)
-        animationsFolder.add(animations, 'idle')
+        animations = {
+            idle: mixer.clipAction(gltf.animations[0]),
+            walk: mixer.clipAction(gltf.animations[2]),
+            jump: mixer.clipAction(gltf.animations[3]),
+            nod: mixer.clipAction(gltf.animations[1]),
+        };
 
-        const nod = mixer.clipAction((gltf).animations[1])
-        animationActions.push(nod)
-        animationsFolder.add(animations, 'nod')
+        // Set nod animation to play once
+        animations.nod.setLoop(THREE.LoopOnce, 1);
+        animations.nod.clampWhenFinished = true;
 
-        const walk = mixer.clipAction((gltf).animations[2])
-        animationActions.push(walk)
-        animationsFolder.add(animations, 'walk')
+        activeAction = animations.idle;
+        activeAction.play();
 
-        const jump = mixer.clipAction((gltf).animations[3])
-        animationActions.push(jump)
-        animationsFolder.add(animations, 'jump')
-
-        activeAction = animationActions[0]
-        idle.play()
-        gltf.scene.translateY(-1)
+        gltf.scene.name = 'Bevo';
+        gltf.scene.translateY(-1);
         scene.add(gltf.scene);
-    },
-        (xhr) => {
-            animate()
-            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-        },
-        (error) => {
-            console.log(error)
+
+        // Listen for when an animation ends
+        mixer.addEventListener('finished', (event) => {
+            if (event.action === animations.nod) {
+                if (movement.forward || movement.backward) {
+                    setAction(animations.walk);  // Resume walking if moving
+                } else {
+                    setAction(animations.idle);  // Return to idle state
+                }
+            }
+        });
+    });
+}
+
+// Action Handler
+function setAction(toAction) {
+    if (toAction !== activeAction) {
+        lastAction?.fadeOut(1);
+        activeAction = toAction.reset().fadeIn(1).play();
+        lastAction = activeAction;
+    }
+}
+
+// Handle Walking/Jumping Together
+function handleJumpAndWalk() {
+    const bevo = scene.getObjectByName('Bevo');
+    if (!bevo) return;
+
+    const moveSpeed = 0.1;
+    const rotateSpeed = 0.05;
+
+    if (movement.forward) bevo.translateZ(moveSpeed);  // Forward
+    if (movement.backward) bevo.translateZ(-moveSpeed);  // Backward
+    if (movement.left) bevo.rotation.y += rotateSpeed;  // Rotate left
+    if (movement.right) bevo.rotation.y -= rotateSpeed;  // Rotate right
+
+    // Update the target camera position to maintain the offset from the character
+    targetCameraPosition.copy(bevo.position).add(cameraOffset);
+}
+
+// Keyboard Event Handlers
+document.addEventListener('keydown', (event) => {
+    switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW':
+            movement.forward = true;
+            if (!isJumping) setAction(animations.walk);
+            break;
+        case 'ArrowDown':
+        case 'KeyS':
+            movement.backward = true;
+            if (!isJumping) setAction(animations.walk);
+            break;
+        case 'ArrowLeft':
+        case 'KeyA':
+            movement.left = true;
+            break;
+        case 'ArrowRight':
+        case 'KeyD':
+            movement.right = true;
+            break;
+        case 'Space':
+            if (!isJumping) {
+                isJumping = true;
+                const bevo = scene.getObjectByName('Bevo');
+                if (bevo) {
+                    setAction(animations.jump);
+
+                    setTimeout(() => {
+                        // Move model up by 0.5 units
+                        // bevo.position.y += 0.5;
+                        // setTimeout(() => {
+                        //     // Move model back to original position
+                        //     bevo.position.y -= 0.5;
+                        // }, 250)
+                        isJumping = false;
+                        if (movement.forward || movement.backward) {
+                            setAction(animations.walk);  // Resume walking after jump
+                        } else {
+                            setAction(animations.idle);  // Go back to idle if not walking
+                        }
+                    }, 400)
+                }
+            }
+            break;
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW':
+        case 'ArrowDown':
+        case 'KeyS':
+            movement.forward = movement.backward = false;
+            if (!isJumping) setAction(animations.idle);
+            break;
+        case 'ArrowLeft':
+        case 'KeyA':
+            movement.left = false;
+            break;
+        case 'ArrowRight':
+        case 'KeyD':
+            movement.right = false;
+            break;
+    }
+});
+
+// Click Handler for Nod Animation
+document.addEventListener('click', (event) => {
+    const mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    const bevo = scene.getObjectByName('Bevo');
+    if (bevo) {
+        const intersects = raycaster.intersectObject(bevo, true);
+        if (intersects.length > 0) {
+            setAction(animations.nod);
         }
-    )
-}
-
-window.addEventListener('resize', onWindowResize, false)
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.render(scene, camera);
-}
-
-const stats = Stats()
-document.body.appendChild(stats.dom)
-
-let animations = {
-    idle: function () {
-        setAction(animationActions[0])
-    },
-    nod: function () {
-        setAction(animationActions[1])
-    },
-    walk: function () {
-        setAction(animationActions[2])
-    },
-    jump: function () {
-        setAction(animationActions[3])
     }
+});
+
+// Update Character Movement
+function updateMovement() {
+    handleJumpAndWalk();  // Handle walking and jumping together
 }
 
-const setAction = (toAction) => {
-    if (toAction != activeAction) {
-        console.log("selected: ", toAction._clip.name)
-        lastAction = activeAction
-        activeAction = toAction
-        lastAction.fadeOut(1)
-        activeAction.reset()
-        activeAction.fadeIn(1)
-        toAction.play()
-    }
+// Update Camera to Follow Character
+function updateCamera() {
+    // Smoothly move the camera towards the target position
+    // camera.position.lerp(targetCameraPosition, 0.1);
+    controls.target.lerp(scene.getObjectByName('Bevo').position, 0.1);  // Follow the character smoothly
+    controls.update();
 }
 
-const clock = new THREE.Clock()
+// Stats and GUI
+const stats = Stats();
+document.body.appendChild(stats.dom);
+
+// const gui = new GUI();
+// const animationsFolder = gui.addFolder('Animations');
+// animationsFolder.open();
+
+// Window Resize Handler
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Animation Loop
+const clock = new THREE.Clock();
 function animate() {
-    requestAnimationFrame(animate)
-    mixers.map(m => m.update(clock.getDelta()));
+    requestAnimationFrame(animate);
+
+    mixer?.update(clock.getDelta());
+    updateMovement();
+    updateCamera();  // Update the camera's position
 
     renderer.render(scene, camera);
-    stats.update()
-    controls.update()
+    stats.update();
+    controls.update();
 }
 
-const gui = new GUI()
-const animationsFolder = gui.addFolder('Animations')
-animationsFolder.open()
-
-LoadAnimatedModel()
+// Load the Model and Start the Animation Loop
+LoadAnimatedModel();
+animate();
